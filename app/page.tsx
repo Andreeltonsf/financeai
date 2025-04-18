@@ -1,9 +1,20 @@
-import { Button } from "./_components/ui/button";
+import { UserButton } from "@clerk/nextjs";
+import { auth } from "@clerk/nextjs/server";
+import { redirect } from "next/navigation";
 
-export default function Home() {
+const  Home = async () => {
+  const {userId} = auth()
+
+  if(!userId) {
+    redirect("/login")
+  }
   return (
-  <>
-    <Button>Hello</Button>
-  </>
+  <div className="flez h-full">
+    <UserButton showName />
+  </div>
   );
 }
+
+
+
+export  default Home;

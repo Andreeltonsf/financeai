@@ -7,8 +7,10 @@ import {
 } from "@prisma/client";
 import { ArrowDownUpIcon } from "lucide-react";
 
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { addTransaction } from "../_actions/add-transaction";
 import {
   TRANSACTION_CATEGORIES_OPTIONS,
   TRANSACTION_PAYMENT_METHOD_OPTIONS,
@@ -48,9 +50,7 @@ const formSchema = z.object({
   name: z.string().trim().min(1, {
     message: "Nome é obrigatório",
   }),
-  amount: z.string().trim().min(1, {
-    message: "Valor é obrigatório",
-  }),
+  amount: z.number().positive(),
   type: z.nativeEnum(TransactionType, {
     message: "Tipo de transação é obrigatório",
   }),
@@ -68,11 +68,13 @@ const formSchema = z.object({
 type FormData = z.infer<typeof formSchema>;
 
 export const AddTransactionButton = () => {
+  const [dialogOpen, setDialogOpen] = useState(false);
+
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
-      amount: "",
+      amount: 0,
       type: TransactionType.EXPENSE,
       category: TransactionCategory.HOUSING,
       paymentMethod: TransactionPaymentMethod.CREDIT_CARD,
@@ -80,12 +82,20 @@ export const AddTransactionButton = () => {
     },
   });
 
-  const onSubmit = (data: FormData) => {
-    console.log({ data });
+  const onSubmit = async (data: FormData) => {
+    try {
+      await addTransaction(data);
+      setDialogOpen(false);
+      form.reset();
+    } catch (error) {
+      console.log(error);
+    }
   };
   return (
     <Dialog
+      open={dialogOpen}
       onOpenChange={(open) => {
+        setDialogOpen(open);
         if (!open) {
           form.reset();
         }
@@ -134,8 +144,12 @@ export const AddTransactionButton = () => {
                     <FormControl>
                       <MoneyInput
                         placeholder="Valor da transação"
+                        onValueChange={(values) => {
+                          field.onChange(values.floatValue);
+                        }}
                         className="w-full"
-                        {...field}
+                        onBlur={field.onBlur}
+                        disabled={field.disabled}
                       />
                     </FormControl>
 
